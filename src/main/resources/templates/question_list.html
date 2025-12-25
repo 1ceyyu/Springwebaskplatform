@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>问题列表</title>
+</head>
+<body>
+
+<div>
+    当前用户：<span th:text="${session.user}"></span>
+    |
+    <a th:href="@{/logout}">退出登录</a>
+</div>
+
+<h2>问题列表</h2>
+
+<p>
+    <a th:href="@{/questions/add}">➕ 发布新问题</a>
+</p>
+
+<ul id="questionList">
+    <li th:each="q : ${questions}">
+        <a th:href="@{/questions/{id}(id=${q.id})}"
+           th:text="${q.title}"></a>
+        <br>
+        <small>
+            作者：<span th:text="${q.author}"></span>
+            发布时间：<span th:text="${#dates.format(q.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+        </small>
+    </li>
+</ul>
+
+<script th:inline="javascript">
+    (function() {
+        // 使用这种写法，IDEA 会认为这是注释，不再报 expected : 错误
+        // 后面的 0 是默认值，运行阶段会被 Thymeleaf 替换成真实的 size
+        let lastCount = /*[[${questions.size()}]]*/ 0;
+
+        async function checkNewQuestions() {
+            try {
+                // 确保后端有 /questions/updates 接口
+                const response = await fetch('/questions/updates');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.length !== lastCount) {
+                        location.reload();
+                    }
+                }
+            } catch (e) {
+                console.error("轮询失败", e);
+            }
+        }
+        setInterval(checkNewQuestions, 5000);
+    })();
+</script>
+</body>
+</html>

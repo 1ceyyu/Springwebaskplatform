@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>发布问题</title>
+</head>
+<body>
+
+<h2>发布新问题</h2>
+
+<form th:action="@{/questions/add}" method="post">
+    <p>
+        标题：
+        <input type="text" name="title">
+    </p>
+
+    <p>
+        内容：
+        <br>
+        <textarea name="content" rows="6" cols="40"></textarea>
+    </p>
+
+    <button type="submit">发布</button>
+</form>
+
+<p>
+    <a th:href="@{/questions}">返回列表</a>
+</p>
+
+</body>
+</html>

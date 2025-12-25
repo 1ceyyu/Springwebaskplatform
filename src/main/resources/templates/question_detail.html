@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>问题详情</title>
+</head>
+<body>
+
+<p>
+    当前用户：<span th:text="${session.user}"></span>
+    |
+    <a th:href="@{/logout}">退出登录</a>
+</p>
+
+<h2 th:text="${question.title}"></h2>
+<p>
+    作者：<span th:text="${question.author}"></span>
+</p>
+<p th:text="${question.content}" style="white-space: pre-wrap;"></p>
+
+<hr>
+
+<h3>回复列表</h3>
+
+<div id="replyContainer">
+    <div id="noReplies" th:if="${#lists.isEmpty(question.replies)}">
+        暂无回复
+    </div>
+
+    <ul id="replyList" th:if="${!#lists.isEmpty(question.replies)}">
+        <li th:each="r : ${question.replies}">
+            <b th:text="${r.author}"></b>
+            <small style="color: gray;" th:text="'(' + ${r.formattedTime} + ')'"></small>：
+            <span th:text="${r.content}" style="white-space: pre-wrap;"></span>
+        </li>
+    </ul>
+</div>
+
+<hr>
+
+<h3>添加回复</h3>
+<form th:action="@{/questions/reply}" method="post">
+    <input type="hidden" name="questionId" th:value="${question.id}">
+    <textarea name="content" rows="4" cols="40" required></textarea>
+    <br>
+    <button type="submit">提交回复</button>
+</form>
+
+<p><a th:href="@{/questions}">返回列表</a></p>
+
+<script th:inline="javascript">
+    (function() {
+        // 使用安全注释获取初始值
+        const qId = /*[[${question.id}]]*/ 0;
+        let lastReplyCount = /*[[${question.replies.size()}]]*/ 0;
+
+        async function pollReplies() {
+            try {
+                // 轮询请求最新的回复数据
+                const response = await fetch('/questions/' + qId + '/replies/data');
+                if (response.ok) {
+                    const replies = await response.json();
+                    // 如果发现数据库中的回复数增加，更新界面
+                    if (replies.length > lastReplyCount) {
+                        updateUI(replies);
+                        lastReplyCount = replies.length;
+                    }
+                }
+            } catch (e) {
+                console.error("刷新失败", e);
+            }
+        }
+
+        function updateUI(replies) {
+            const container = document.getElementById('replyContainer');
+            const noReplies = document.getElementById('noReplies');
+
+            // 隐藏“暂无回复”文字
+            if (noReplies) noReplies.style.display = 'none';
+
+            // 确保页面上有 ul 列表，如果没有则创建一个
+            let ul = document.getElementById('replyList');
+            if (!ul) {
+                ul = document.createElement('ul');
+                ul.id = 'replyList';
+                container.appendChild(ul);
+            }
+
+            // 清空旧列表并重新渲染
+            ul.innerHTML = "";
+            replies.forEach(r => {
+                const li = document.createElement('li');
+
+                // 1. 作者名字
+                const b = document.createElement('b');
+                b.textContent = r.author;
+
+                // 2. 时间戳（从 JSON 中的 formattedTime 字段读取）
+                const timeSmall = document.createElement('small');
+                timeSmall.style.color = "gray";
+                timeSmall.textContent = ` (${r.formattedTime || ''}) `;
+
+                // 3. 回复正文（支持换行）
+                const span = document.createElement('span');
+                span.textContent = r.content;
+                span.style.whiteSpace = "pre-wrap";
+
+                // 4. 按顺序组装
+                li.appendChild(b);
+                li.appendChild(timeSmall);
+                li.appendChild(document.createTextNode('：'));
+                li.appendChild(span);
+
+                ul.appendChild(li);
+            });
+        }
+
+        // 每 3 秒执行一次轮询
+        setInterval(pollReplies, 3000);
+    })();
+</script>
+</body>
+</html>
