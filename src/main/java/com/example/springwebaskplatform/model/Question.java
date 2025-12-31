@@ -16,7 +16,7 @@ public class Question {
     private String author;
     private long createdAt;
 
-    // 修改处：使用同步列表保证线程安全
+    // 使用同步列表保证线程安全
     private List<Reply> replies = Collections.synchronizedList(new ArrayList<>());
 
     public Question(String title, String content, String author) {
